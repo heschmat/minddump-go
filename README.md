@@ -1,0 +1,132 @@
+
+## fundamentals
+```sh
+go version
+
+go mod init github.com/heschmat/minddump-go
+
+```
+When there's a valid `go.mod` file in the root of your project directory, your project is a **module**.
+
+
+### web application basics
+
+Handlers are responsible for executing the application logic & writing HTTP responses. 
+
+The router/servemux stores a mapping between the URL & handlers. It dispaches the reques to the matching handler.
+
+In Go we can simply establish a web server & listen for incoming requests as part of the application itself.
+
+`* http.Request` parameter is a pointer to a struct which holds information about the current request.
+
+N.B. Go's servemux treats the route patter "/" like a catch-all.
+
+`go run` is a shortcut to combile the code, create an executable binary in `/tmp` & then run it.
+```sh
+go run .
+go run main.go
+go run `module-path`
+```
+
+### 
+
+subtree path patter (when a route pattern ends with a trailing slash: "/" or "/static")
+
+`r.PathValue()` to get the value for a wildcard segment: `r.PathValue("itemID")`. It returns a string.
+
+**The most specific pattern wins**. But avoid it.
+
+### customizing responses
+
+If you want t send a non-200 status code, you must call `w.WriteHeader()` before any call to `w.Write()`
+
+#### writing response bodies
+In practice, it's common to pass the `http.ResponseWriter` value to another function that writes the resposne `w` for us.
+
+**...because the `http.ResponseWriter` value in the handlers has a `.Write()` method, it satisfies the `io.Write` interface.**
+```go
+// instead of 
+w.Write([]byte("Bonjour"))
+
+// either of:
+io.WriteString(w, "Bonjour")
+fmt.Fprint(w, "Bonjour")
+
+```
+
+
+## MiSC
+
+byte slice 
+---
+`cat /etc/services | grep http-alt`
+---
+
+### funcs
+```go
+http.NotFound(w, r)
+```
+
+### fmt
+```go
+fmt.Fprint(w, "Bonjour")
+
+fmt.Sprintf("item %d...", id)
+
+
+
+// instead of:
+msg := fmt.Sprintf("snippet %d...", id)
+w.Write([]byte(msg))
+// simply
+fmt.Fprintf(w, "snippet %d...", id)
+```
+
+### curl
+
+```sh
+curl -i localhost:4000/
+
+curl --head localhost:4000/
+
+curl -i -d "" localhost:4000/
+
+
+curl -i localhost:4000/snippet/create
+curl -i -d "" localhost:4000/snippet/create
+curl -i -X DELETE localhost:4000/snippet/create
+
+
+
+```
+
+### statusCode
+```md
+405 Method Not Allowed
+
+```
+
+## structure
+
+`cmd/` contains the **application-specific code**.
+```sh
+mkdir -p cmd/web internal ui/html ui/static
+
+# to automate some administrative tasks in the future
+# mkdir -p cmd/cli
+
+```
+
+### cmd/web
+```md
+main.go
+handlers.go
+```
+
+### internal
+contains the ancillary non-application-specific code.
+
+### ui
+ui/html
+
+ui/static
