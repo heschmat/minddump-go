@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,7 +12,7 @@ type TemplateData struct {
 	CurrentYear int
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	data := TemplateData{
 		CurrentYear: time.Now().Year(),
 	}
@@ -31,7 +30,8 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 	ts, err := template.ParseFiles(tmpl_files...)
 	if err != nil {
-		log.Println(err.Error())
+		// log.Println(err.Error())
+		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -44,13 +44,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 	// err = ts.Execute(w, nil)
 	err = ts.ExecuteTemplate(w, "base", data) // remember {{define "base"}} ?
 	if err != nil {
-		log.Println(err.Error())
+		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 }
 
-func getSnippetByID(w http.ResponseWriter, r *http.Request) {
+func (app *application) getSnippetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || id < 1 {
 		http.NotFound(w, r)

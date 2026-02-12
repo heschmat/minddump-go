@@ -85,6 +85,33 @@ Because **FileServer** exposes everything reachable under that root via HTTP.
 Not just what you link to.
 Anything a user guesses becomes accessible.
 
+## configuration & error handling
+
+❌ `addr := os.GetEnv("ADDR_")`
+
+Use flags:
+```go
+// `flag.String()` returns a pointer to the flag value (not the value itself)
+addr := flag.String("addr", ":4000", "HTTP network address")
+flag.Parse()
+
+// pass the dereferenced `addr` pointer
+log.Printf("starting the server on %s", *addr)
+
+// go run ./cmd/web -addr=$ADDR_
+```
+To list all the available command-line flags: `go run ./cmd/web -help` 
+
+### Dependency injection
+Q: how to make any dependency - structurred logger, db connection pool, centralized error handler ...- available to the handlers?
+
+A: inject dependencies into the handlers
+
+As all our handlers are in the same package, we can inject dependencies like so:
+1- put the dpendencies into a custom **application struct**
+2- define the handlers as methods agains the struct (which holds the application-wide dependencies)
+
+
 ## MiSC
 
 byte slice 
@@ -96,6 +123,33 @@ byte slice
 ```go
 http.NotFound(w, r)
 ```
+
+### log
+
+```go
+log.Println("starting the server on :4000")
+log.Printf("starting the server on %s", *addr)
+
+# -----------
+err := http.ListenAndServe(":4000", nil)
+log.Fatal(err)
+```
+
+#### structured logging 
+
+```go
+// args:
+// 1: write destination for the log entries
+// 2: a pointer to a `slog.HandlerOptions` to customize the behavior (nil for defaul)
+loggerHandler := slog.NewTextHandler(os.Stdout, nil)
+// create the structured logger
+logger := slog.New(loggerHandler)
+```
+During development, the logs are displayed in the terminal (the standard output.)
+
+In staging/prod we can redirect the standard out stream to an on-disk file: `go run ./cmd/web >> /tmp/minddump.log`
+
+N.B. custom loggers created by `slog.New()` are concurrently-safe. 
 
 ### fmt
 ```go
@@ -110,6 +164,15 @@ msg := fmt.Sprintf("snippet %d...", id)
 w.Write([]byte(msg))
 // simply
 fmt.Fprintf(w, "snippet %d...", id)
+```
+
+#### err
+```go
+if err != nil {
+  log.Println(err.Error())
+  http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+  return
+}
 ```
 
 ### curl
