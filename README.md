@@ -54,6 +54,36 @@ fmt.Fprint(w, "Bonjour")
 
 ```
 
+### serving static files
+
+```md
+URL:  /static/css/main.css
+        │
+        ▼
+ServeMux route match (GET /static/)
+        │
+        ▼
+StripPrefix("/static")
+        │
+        ▼
+New path: /css/main.css
+        │
+        ▼
+FileServer root: ./ui/static/
+        │
+        ▼
+Disk path: ./ui/static/css/main.css
+        │
+        ▼
+Serve file (or 404)
+
+```
+
+
+So why not serve `http.FileServer(http.Dir("./ui/"))`?
+Because **FileServer** exposes everything reachable under that root via HTTP.
+Not just what you link to.
+Anything a user guesses becomes accessible.
 
 ## MiSC
 
@@ -127,6 +157,8 @@ handlers.go
 contains the ancillary non-application-specific code.
 
 ### ui
-ui/html
+ui/html/pages
+    home.tmpl
+    
 
 ui/static
