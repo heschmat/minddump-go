@@ -15,6 +15,7 @@ type config struct {
 // a struct to hold the application-wide dependencies
 type application struct {
 	logger *slog.Logger
+	error  *errorHandler
 }
 
 func main() {
@@ -33,23 +34,14 @@ func main() {
 	// application dependencies -----------------
 	app := &application{
 		logger: logger,
+		error:  &errorHandler{logger: logger},
 	}
-
-	// servemux ---------------------------------
-	mux := http.NewServeMux()
-
-	fileServer := http.FileServer(http.Dir("./ui/static/")) // &{./ui/static/}
-	// N.B. actual file access happens per request.
-	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
-
-	mux.HandleFunc("GET /{$}", app.home)
-	mux.HandleFunc("GET /snippet/view/{id}", app.getSnippetByID)
 
 	// server -----------------------------------
 	logger.Info("starting server...", "addr", cfg.addr)
 
 	// params: the TCP network address, the servemux
-	err := http.ListenAndServe(cfg.addr, mux)
+	err := http.ListenAndServe(cfg.addr, app.routes())
 	// N.B. Any error returned by http.ListenAndServe() is always non-nil.
 	// log.Fatal(err)
 	logger.Error(err.Error())

@@ -24,15 +24,14 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// If two files define the same template name, the last one parsed wins. +++
 	tmpl_files := []string{
 		"./ui/html/layout.tmpl.html",
-		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/partials/nav.tmpl.htmlx",
 		"./ui/html/pages/home.tmpl.html",
 	}
 
 	ts, err := template.ParseFiles(tmpl_files...)
 	if err != nil {
 		// log.Println(err.Error())
-		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.error.serverError(w, r, err)
 		return
 	}
 	// if all went well, now we have:
@@ -44,8 +43,9 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// err = ts.Execute(w, nil)
 	err = ts.ExecuteTemplate(w, "base", data) // remember {{define "base"}} ?
 	if err != nil {
-		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		// app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
+		// http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.error.serverError(w, r, err)
 		return
 	}
 }
