@@ -1,4 +1,5 @@
 
+## Setup MySQL
 ```sh
 sudo apt install -U mysql-server
 
@@ -95,4 +96,36 @@ Verify the permission:
 ```sql
 DROP TABLE snippets;
 -- ERROR 1142 (42000): DROP command denied to user 'web'@'localhost' for table 'snippets'
+```
+
+## Install a db driver
+The **db driver** acts as a middleman; translating commands between Go & the MySQL db itself. 
+
+```sh
+go get github.com/go-sql-driver/mysql@v1
+
+# you should see `go.sum` file added
+# to download the exact version of the packages need for the project: go mod download
+# to ensure that nothing in those downloaded packages has been changed unexpectedly: go mod verify
+# go mod tidy: automatically removes any unused packages from the go.mod & go.sum files
+
+# alternatively, you can remove a package like so:
+go get github.com/foo/bar@none
+```
+
+N.B. using the `-u` flag increases the risk of breakages when upgrading packages (just don't do it).
+```sh
+# e.g., this will update the package & ALL ITS depentencies to their latest versions.
+# but it may well be that in `go.mod` the dependencies versions are older.
+go get -u github.com/go-sql-driver/mysql
+```
+
+
+```go
+// params: driver name, data source name aka connection string aka DSN (format varies based on db & the driver)
+// parseTime=true (instructs the driver to convert SQL TIME & DATE fields to Go time.Time values)
+// returns: a sql.DB value (not just a db connection; it's a pool of many connections, safe for concurrent access)
+// the connection pool is intented to be long-lived.
+// Do NOT call `sql.Open()` in a short-lived HTTP handler (it's a waste of memory & network resources)
+db, err := sql.Open()
 ```
