@@ -12,6 +12,7 @@ import (
 	// (i.e., to register the MySQL driver with database/sql (via its init() function)),
 	// and we don't directly reference any of its exported identifiers in our code.
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/heschmat/minddump-go/internal/models"
 )
 
 type config struct {
@@ -22,26 +23,34 @@ type config struct {
 
 // a struct to hold the application-wide dependencies
 type application struct {
-	logger *slog.Logger
-	error  *errorHandler
+	logger   *slog.Logger
+	error    *errorHandler
+	snippets *models.SnippetModel
 }
 
 func main() {
-	// flags & env variables --------------------
-	var cfg config
-	flag.StringVar(&cfg.addr, "addr", ":4000", "HTTP network address")
-	flag.StringVar(&cfg.staticDir, "static-dir", "./ui/static", "Path to static assets")
-	flag.StringVar(&cfg.dsn, "dsn", "web:ChangeM3@/snippetbox?parseTime=true", "MySQL data source name")
-	flag.Parse()
-
 	// logger -----------------------------------
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug, // for development
 		// AddSource: true,
 	}))
 
+	// flags & env variables --------------------
+	var cfg config
+
+	dsn := os.Getenv("SNIPPETBOX_DSN")
+	if dsn == "" {
+		logger.Error("SNIPPETBOX_DSN must be set")
+		os.Exit(1)
+	}
+
+	flag.StringVar(&cfg.addr, "addr", ":4000", "HTTP network address")
+	flag.StringVar(&cfg.staticDir, "static-dir", "./ui/static", "Path to static assets")
+	flag.StringVar(&cfg.dsn, "dsn", dsn, "MySQL data source name")
+	flag.Parse()
+
 	// database connection ----------------------
-	logger.Info("connecting to database...", "dsn", cfg.dsn)
+	logger.Info("connecting to database...")
 	db, err := openDB(cfg.dsn)
 	if err != nil {
 		// logger.Error(err.Error())
@@ -58,8 +67,9 @@ func main() {
 
 	// application dependencies -----------------
 	app := &application{
-		logger: logger,
-		error:  &errorHandler{logger: logger},
+		logger:   logger,
+		error:    &errorHandler{logger: logger},
+		snippets: &models.SnippetModel{DB: db},
 	}
 
 	// server -----------------------------------
